@@ -184,10 +184,10 @@ body.system #header {background: #6B3081 url('../images/header-inner.gif') repea
     display: block;
     width: 150px;
     height: 40px;
-    background: url('../melody/melody-logo-white-banner.png') no-repeat;
+    background: url('../images/melody/melody-logo-white-banner.png') no-repeat;
 }
 .system #brand a {
-    background-image: url('../images/melody-logo-white-banner.png');
+    background-image: url('../images/melody/melody-logo-white-banner.png');
 }
 #brand span {
     position: relative;
@@ -2472,9 +2472,20 @@ optgroup option {
 }
 .page-listing-table,
 .entry-listing-table {
+    /* TODO - eliminate need for !important */
     margin-left: -28px !important;
     width: 730px !important;
 }
+
+.power-edit .page-listing-table,
+.power-edit .entry-listing-table {
+    margin-left: 0px !important;
+}
+
+.listing.power-edit {
+    width: 870px !important;
+}
+
 .listing thead tr {
   background: none;
 }
@@ -2512,6 +2523,10 @@ optgroup option {
 .page-listing-table .date,
 .entry-listing-table .date {
     text-align: right;
+}
+.power-edit .page-listing-table .date,
+.power-edit .entry-listing-table .date {
+    text-align: left;
 }
 .page-listing-table .extra .actions,
 .entry-listing-table .extra .actions {
@@ -5100,7 +5115,7 @@ background: #C9E1EE;
     margin: 0 4px 0 0;
     padding: 0;
     color: #000;
-    background: url(../../codepress/images/toggle.gif) left top no-repeat;
+    background: url(../codepress/images/toggle.gif) left top no-repeat;
     text-indent: 1000em;
     min-width: 0;
     -moz-user-select: none !important;

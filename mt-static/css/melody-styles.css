@@ -1,0 +1,64 @@
+/* @override 
+	http://melody.studiolift.com/melody/mt-static/melody/styles.css?v=0.9.22%20%28MT%204.34%2B%29
+	http://melody.studiolift.com/melody/mt-static/melody/styles.css?v=0.9.24%20%28MT%204.34%2B%29
+*/
+  /* Brand */
+.main-screen #brand {
+    position: absolute;
+    top: 0px;
+    left: 20px;
+}
+.system #brand a,
+.blog #brand a {
+    display: block;
+    width: 150px;
+    height: 41px;
+    background: url('../images/melody/melody-logo-white-banner.png') no-repeat;
+}
+
+/* Redesigned Plugins Screen */
+#enabled-plugins-table td.name {
+    width: 150px;
+}
+
+/* New Plugins Settings Screen */
+.plugin_form { 
+    display: none; 
+}
+#list-plugins .plugin_form h3.plugin-name {
+    margin-bottom: 10px;
+} 
+#list-plugins.system #main-content-inner,
+#list-plugins #main-content-inner {
+    border-bottom: 0;
+}
+
+/* Redesign Blog Settings */
+.sys-preferences,
+.blog-preferences {
+    display: none;
+}
+#content-nav ul li.changed b { 
+    font-style: italic;
+}
+
+/* Full Screen Editor */
+.edit-entry .fullscreen #title-field #title {
+  width: 890px;
+}
+#template-body-actions .fullscreen,
+#editor-content .editor-toolbar .fullscreen {
+  background-image: url('../images/melody/fullscreen-icon.gif');
+}
+.edit-template .fullscreen #title-field #title {
+  width: 890px;
+}
+/* End Full Screen Editor */
+
+.listing tr.superuser .user-status-enabled img {
+  background-image: url(../images/status_icons/user-enabled-sysadmin.png);
+}
+
+/* Refactored Plugin Preferences */
+#list-plugins .plugin_form h3.plugin-name { display: none; }
+/* END Refactored Plugin Preferences */

@@ -42,7 +42,7 @@ BEGIN {
         # different version and their uses and the version module POD
         # for details about the next line and its semantics:
         # http://search.cpan.org/~jpeacock/version-0.85/lib/version.pod
-        use version 0.77; our $VERSION = version->declare("v0.9.32");
+        use version 0.77; our $VERSION = version->declare("v0.9.36");
 
         # MakeMaker stops at the line above, so NOW, we swap the $VERSION
         # to $PRODUCT_VERSION and assign $VERSION
@@ -52,7 +52,7 @@ BEGIN {
         $SCHEMA_VERSION  = '4.0078';
         $PRODUCT_NAME    = 'Melody';
         $PRODUCT_CODE    = 'OM';
-        $VERSION_ID      = '1.0.0b3 (build 32)';
+        $VERSION_ID      = '1.0.0 (RC 2, build 36)';
         $PORTAL_URL      = 'http://openmelody.org';
     } ## end if ( '__MAKE_ME__' eq ...)
     else {
@@ -1002,6 +1002,15 @@ sub init_config {
             }
         }
     } ## end for my $meth (@mt_paths)
+
+    if ( my $local_lib = $cfg->PERL5LIB || $cfg->PerlLocalLibPath ) {
+        $local_lib = [ $local_lib ] if ! 'ARRAY' eq ref $local_lib;
+        eval "use local::lib qw( @{$local_lib} )";
+        return $mt->trans_error(
+            'Can\'t load local lib from path [_1]: ',
+            join(', ', @$local_lib),
+            $@, ) if $@;
+    }
 
     return $mt->trans_error("Bad ObjectDriver config")
       unless $cfg->ObjectDriver;

@@ -358,24 +358,25 @@ sub save_config {
                 }
             }
             if ( $opt->{type} eq 'file' ) {
-                my $result = process_file_upload( $app, $var, 'support',
+                my $scope = $opt->{scope} || 'support';
+                my $result = process_file_upload( $app, $var, $scope,
                                                   $opt->{destination} );
                 if ( $result->{status} == ConfigAssistant::Util::ERROR() ) {
                     return $app->error(
                               "Error uploading file: " . $result->{message} );
-                }
-                if ( $result->{status} == ConfigAssistant::Util::NO_UPLOAD ) {
+                } elsif ( $result->{status} == ConfigAssistant::Util::NO_UPLOAD ) {
                     if ($param->{$var.'-clear'} && $data->{$var}) {
                         my $old = MT->model('asset')->load( $data->{$var} );
                         $old->remove if $old;
+                        $param->{$var} = undef;
                     }
-                    next;
+                } else {
+                    if ( $data->{$var} ) {
+                        my $old = MT->model('asset')->load( $data->{$var} );
+                        $old->remove if $old;
+                    }
+                    $param->{$var} = $result->{asset}->{id};
                 }
-                if ( $data->{$var} ) {
-                    my $old = MT->model('asset')->load( $data->{$var} );
-                    $old->remove if $old;
-                }
-                $param->{$var} = $result->{asset}->{id};
             }
             my $old = $data->{$var};
             my $new = $param->{$var};
@@ -385,6 +386,10 @@ sub save_config {
               || ( defined $new and $old ne $new );
             ###l4p $logger->debug('$has_changed: '.$has_changed);
 
+            # If the field data has changed, and if the field uses the 
+            # "republish" key, we want to republish the specified templates.
+            # Add the specified templates to $repub_queue so that they can
+            # be republished later.
             if ( $has_changed && $opt && $opt->{'republish'} ) {
                 foreach ( split( ',', $opt->{'republish'} ) ) {
                     $repub_queue->{$_} = 1;
@@ -407,19 +412,47 @@ sub save_config {
             $app->run_callbacks( 'options_change.plugin.' . $plugin->id,
                                  $app, $plugin );
         }
+        
+        # Index templates that have been flagged should be republished.
+        use MT::WeblogPublisher;
         foreach ( keys %$repub_queue ) {
             my $tmpl = MT->model('template')
               ->load( { blog_id => $blog_id, identifier => $_, } );
-            next unless $tmpl;
-            MT->log( {
-                   blog_id => $blog_id,
-                   message => "Config Assistant: Republishing " . $tmpl->name
-                 }
-            );
-            $app->rebuild_indexes(
+
+            if (!$tmpl) {
+                MT->log( {
+                       blog_id => $blog_id,
+                       level   => '2', # Warning
+                       message => "Config Assistant could not find a "
+                                  . "template with the identifier " . $_,
+                     }
+                );
+                next;
+            }
+
+            my $result = $app->rebuild_indexes(
                                    Blog     => $app->blog,
                                    Template => $tmpl,
                                    Force    => 1,
+            );
+
+            # Report on the success/failure of the template republishing.
+            my ($message, $level);
+            if ($result) {
+                $message = "Config Assistant: Republishing template " 
+                           . $tmpl->name;
+                $level   = '1'; # Info
+            }
+            else {
+                $message = "Config Assistant could not republish template " 
+                           . $tmpl->name;
+                $level   = '4'; # Error
+            }
+            MT->log( {
+                   blog_id => $blog_id,
+                   level   => $level,
+                   message => $message,
+                 }
             );
         }
         $pdata->data($data);
@@ -462,11 +495,11 @@ sub type_file {
               . "\">view</a> | <a href=\"javascript:void(0)\" class=\"remove\">remove</a></p>";
         }
         else {
-            $html .= "<p>File not found.</p>";
+            $html .= "<p>Selected asset could not be found. <a href=\"javascript:void(0)\" class=\"remove\">reset</a></p>";
         }
     }
     $html .= "      <input type=\"file\" name=\"$field_id\" class=\"full-width\" />\n" .
-        "      <input type=\"hidden\" name=\"$field_id-clear\" value=\"0\" class=\"clear-file\" />\n";
+             "      <input type=\"hidden\" name=\"$field_id-clear\" value=\"0\" class=\"clear-file\" />\n";
 
     $html .= "<script type=\"text/javascript\">\n";
     $html .= "  \$('#field-".$field_id." a.remove').click( handle_remove_file );\n";
@@ -504,7 +537,7 @@ sub type_link_group {
     my ( $ctx, $field_id, $field, $value ) = @_;
     my $static = $app->static_path;
     $value = '"[]"' if ( !$value || $value eq '' );
-    eval "\$value = $value";
+    eval "\$value = \"$value\"";
     if ($@) { $value = '"[]"'; }
     my $list;
     eval { $list = JSON::from_json($value) };
@@ -516,12 +549,12 @@ sub type_link_group {
 
     foreach (@$list) {
         $html
-          .= '<li class="pkg"><a class="link" href="'
+          .= '<li><a class="link" href="'
           . $_->{'url'} . '">'
           . $_->{'label'}
           . '</a> <a class="remove" href="javascript:void(0);"><img src="'
           . $static
-          . '/images/icon_close.png" /></a> <a class="edit" href="javascript:void(0);">edit</a></li>';
+          . '/images/icon_close.png" alt="remove" title="remove" /></a> <a class="edit" href="javascript:void(0);">edit</a></li>';
     }
     $html
       .= "<li class=\"last\"><button class=\"add-link\">Add Link</button></li>"
@@ -542,7 +575,7 @@ sub type_link_group {
       var l = \$(this).html();
       struct.push( { 'url': u, 'label': l } );
     });
-    var json = \$.toJSON(struct);
+    var json = struct.toJSON().escapeJS();
     \$('#'+'$field_id').val( json );
   });
   \$('#'+'$field_id-link-group ul li a.remove').click( handle_delete_click );
@@ -577,8 +610,17 @@ sub type_entry {
     my ( $ctx, $field_id, $field, $value ) = @_;
     my $out;
     my $obj_class = $ctx->stash('object_class') || 'entry';
-    my $obj       = MT->model($obj_class)->load($value);
-    my $obj_name  = ( $obj ? $obj->title : '' ) || '';
+    my ($obj, $obj_name);
+    
+    # The $value is the object ID. Only if $value exists should we try to 
+    # load the object. Otherwise, the most recent entry/page is loaded
+    # and the $obj_name is incorrectly populated with the most recent object
+    # title. This way, $obj_name is blank if there is no $value, which is
+    # clearer to the user.
+    if ($value) {
+        $obj       = MT->model($obj_class)->load($value);
+        $obj_name  = ( $obj ? $obj->title : '' ) || '';
+    }
     my $blog_id   = $field->{all_blogs} ? 0 : $app->blog->id;
     unless ( $ctx->var('entry_chooser_js') ) {
         $out .= <<EOH;
@@ -606,6 +648,7 @@ EOH
   </div>
 </div>
 EOH
+    $ctx->stash('object_class','');
     return $out;
 } ## end sub type_entry
 
@@ -1067,7 +1110,7 @@ sub _hdlr_field_link_group {
     my $field = $ctx->stash('field') or return _no_field($ctx);
     my $value = _get_field_value($ctx);
     $value = '"[]"' if ( !$value || $value eq '' );
-    eval "\$value = $value";
+    eval "\$value = \"$value\"";
     if ($@) { $value = '[]'; }
     my $list = JSON::from_json($value);
 
@@ -1463,10 +1506,11 @@ END_TMPL
 <mt:setvarblock name="html_head" append="1">
   <link rel="stylesheet" href="<mt:PluginStaticWebPath component="configassistant">css/app.css" type="text/css" />
   <link rel="stylesheet" href="<mt:PluginStaticWebPath component="configassistant">colorpicker/css/colorpicker.css" type="text/css" />
+<mt:unless tag="ProductName" eq="Melody">
   <script src="<mt:StaticWebPath>jquery/jquery.js" type="text/javascript"></script>
+</mt:unless>
   <script src="<mt:PluginStaticWebPath component="configassistant">js/options.js" type="text/javascript"></script>
   <script src="<mt:PluginStaticWebPath component="configassistant">colorpicker/js/colorpicker.js" type="text/javascript"></script>
-  <script src="<mt:PluginStaticWebPath component="configassistant">js/jquery.json-2.2.min.js" type="text/javascript"></script>
 </mt:setvarblock>
 END_TMPL
 

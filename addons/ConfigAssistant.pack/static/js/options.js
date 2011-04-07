@@ -1,16 +1,18 @@
 // Utility Functions
 function handle_edit_click() {
-    var link = $(this).parent().find('a.link');
+    var p = $(this).parent();
+    var link = p.find('a.link');
     if (link.length > 0) {
-        $(this).parent().replaceWith( render_link_form( link.html(), link.attr('href') ) );
+        p.replaceWith( render_link_form( link.html(), link.attr('href') ) );
     } else {
-        $(this).parent().before( render_link_form( '','' ) );
-        $(this).parent().hide();
+        p.before( render_link_form( '','' ) );
+        p.hide();
     }
+    p.parent().find('input.label').focus();
     return false;
 };
 function render_link(label,url) {
-    var dom = '<li class="pkg"><a class="link" href="'+url+'">'+label+'</a> <a class="remove" href="javascript:void(0);"><img src="'+StaticURI+'images/icon_close.png" /></a> <a class="edit" href="javascript:void(0);">edit</a></li>';
+    var dom = '<li class="pkg"><a class="link" href="'+url+'">'+label+'</a> <a class="remove" href="javascript:void(0);"><img src="'+StaticURI+'images/icon_close.png" alt="remove" title="remove" /></a> <a class="edit" href="javascript:void(0);">edit</a></li>';
     var e = $(dom);
     e.find('a.edit').click( handle_edit_click );
     e.find('a.remove').click( handle_delete_click );
@@ -32,7 +34,7 @@ function handle_remove_file() {
     $(this).parent().remove(); return false;
 };
 function render_link_form(label,url) {
-    var dom = '<li class="pkg"><label class="link-text">Label: <input type="text" class="label" value="'+(typeof label != 'undefined' ? label : '')+'" /></label><label class="link-url">URL: <input type="text" class="url" value="'+(typeof url != 'undefined' ? url : '')+'" /></label> <button>Save</button></li>';
+    var dom = '<li><label class="link-text">Label: <input type="text" class="label" value="'+(typeof label != 'undefined' ? label : '')+'" /></label><label class="link-url">URL: <input type="text" class="url" value="'+(typeof url != 'undefined' ? url : '')+'" /></label> <button>Save</button></li>';
     var e = $(dom);
     e.find('button').click( handle_save_click ); 
     e.find('input.url').focus( function() {
@@ -42,7 +44,7 @@ function render_link_form(label,url) {
                 e.find('button').trigger('click');
                 return false;
             }
-        });
+    });
     }).blur( function() {
         $(this).unbind('keypress');
     });

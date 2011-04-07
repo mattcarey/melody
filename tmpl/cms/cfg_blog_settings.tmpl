@@ -24,6 +24,7 @@
 
 <mt:setvarblock name="html_head" append="1">
 <script type="text/javascript" src="<mt:var name="static_uri">js/tc/client.js"></script>
+<script src="<mt:StaticWebPath>jquery/jquery.history.js" type="text/javascript"></script>
 <script type="text/javascript">
 /* <![CDATA[ */
 function validate (f) {
@@ -130,6 +131,14 @@ function init() {
     // conditionally disables
     disableFields('site_url','site_path');
 }
+
+// Event handler for Setup TypePad link on Login & Signup tab
+// Switches to Web Services tab
+$(function() {
+    $('#lnkTypePad').click(function() {
+        $('a[title=web-services]').click();
+    });
+});
 
 TC.attachLoadEvent( init );
 /* ]]> */

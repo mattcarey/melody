@@ -5701,7 +5701,7 @@ que la dirección provista es correcta y le pertenece.',
     'Your database is already current.' => 'Su base de datos está al día.',
 
 ## tmpl/cms/resources.tmpl
-    'Resouces Provided by Plugins' =>
+    'Resources Provided by Plugins' =>
       'Recursos que provistos por los Plugins',
     'Tags:'           => 'Etiquetas:',
     'Tag Attributes:' => 'Atributos de etiquetas:',
@@ -6048,7 +6048,7 @@ que la dirección provista es correcta y le pertenece.',
     'Chooser'                   => 'Chooser',
 
 ## addons/ConfigAssistant.pack/config.yaml
-    'Movable Type Factory Default\'' =>
+    'Factory Default\'' =>
       'Opciones predeterminadas de fábrica\'',
 
 ## addons/ThemeExport.plugin/tmpl/dialog_export.tmpl
